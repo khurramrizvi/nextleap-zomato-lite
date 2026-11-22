@@ -37,11 +37,6 @@ body {
   outline-offset: 2px;
 }
 
-/* The review textarea shows focus with its own border and glow */
-textarea:focus-visible {
-  outline: none;
-}
-
 @keyframes enter-up {
   from {
     opacity: 0;
@@ -104,6 +99,8 @@ body {
   display: inline-block;
   overflow: hidden;
   vertical-align: bottom;
+  padding-top: 0.2em;
+  margin-top: -0.2em;
   padding-bottom: 0.14em;
   margin-bottom: -0.14em;
 }

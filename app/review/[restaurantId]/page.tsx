@@ -194,7 +194,7 @@ export default function WriteReviewPage() {
       <header className="space-y-5">
         <Link
           href={`/restaurant/${restaurantId}`}
-          className="rise inline-flex items-center gap-1.5 min-h-[44px] -ml-1 px-1 text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+          className="rise inline-flex items-center gap-1.5 min-h-[44px] text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
         >
           <svg
             viewBox="0 0 24 24"
@@ -266,73 +266,87 @@ export default function WriteReviewPage() {
             posted ? "opacity-0 scale-[0.96]" : ""
           }`}
         >
-          {/* 1. Rating: large stars with the label spelled out underneath */}
-          <div className="px-5 pt-8 pb-7 sm:px-7 sm:pt-10 sm:pb-8 text-center">
-            <div
-              className="flex justify-center gap-1 sm:gap-2"
-              role="radiogroup"
-              aria-label="Star rating"
-              onMouseLeave={() => setHoveredRating(null)}
-            >
-              {[1, 2, 3, 4, 5].map((value) => {
-                const isSelected = rating !== null && value <= rating;
-                const isActive = value <= activeStars;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={rating === value}
-                    aria-label={`${value} ${value === 1 ? "star" : "stars"}, ${RATING_LABELS[value]}`}
-                    onMouseEnter={() => setHoveredRating(value)}
-                    onClick={() => setRating(value)}
-                    className={`relative flex aspect-square max-w-[60px] flex-1 items-center justify-center rounded-full transition-[scale,translate,color] duration-150 hover:-translate-y-1 active:scale-[0.85] cursor-pointer ${
-                      isActive
-                        ? "text-[var(--accent)]"
-                        : "text-[var(--star-empty)]"
-                    }`}
-                  >
-                    {/* Re-keyed on every pick so the selected stars pop in sequence */}
-                    <span
-                      key={isSelected ? `on-${rating}` : "off"}
-                      className={isSelected ? "star-pop" : "inline-flex"}
-                      style={{ "--i": value - 1 } as CSSProperties}
-                    >
-                      <StarIcon
-                        filled={isActive}
-                        className="h-10 w-10 sm:h-11 sm:w-11"
-                      />
-                    </span>
-                    {rating === value && (
-                      <span aria-hidden="true" className="burst" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 min-h-[62px] space-y-1" aria-live="polite">
-              <p
-                key={activeLabel ?? "empty"}
-                className={`font-[family-name:var(--font-besley)] text-2xl font-medium tracking-[-0.01em] ${
-                  activeLabel
-                    ? "pop-in text-[var(--accent)]"
-                    : "text-[var(--foreground)]"
-                }`}
-                style={{ animationDuration: "240ms" }}
+          {/* 1. Rating: large stars inside a warm tray with the label spelled out */}
+          <div className="px-5 pt-6 pb-2 sm:px-7 sm:pt-7">
+            <div className="rounded-xl bg-[var(--surface)]/65 px-4 py-6 sm:px-6 sm:py-7 text-center">
+              <div
+                className="flex justify-center gap-1 sm:gap-2"
+                role="radiogroup"
+                aria-label="Star rating"
+                onPointerLeave={() => setHoveredRating(null)}
               >
-                {activeLabel ?? "Tap a star to rate"}
-              </p>
-              <p className="text-sm text-[var(--muted)]">
-                {activeStars > 0
-                  ? RATING_HINTS[activeStars]
-                  : "From 1 for poor to 5 for excellent."}
-              </p>
+                {[1, 2, 3, 4, 5].map((value) => {
+                  const isSelected = rating !== null && value <= rating;
+                  const isActive = value <= activeStars;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={rating === value}
+                      aria-label={`${value} ${value === 1 ? "star" : "stars"}, ${RATING_LABELS[value]}`}
+                      // Hover preview is for a real mouse only. A touch never sends a
+                      // matching "leave", which would freeze the preview on the last
+                      // star tapped and hide every later selection.
+                      onPointerEnter={(e) => {
+                        if (e.pointerType === "mouse") setHoveredRating(value);
+                      }}
+                      onClick={() => {
+                        setRating(value);
+                        setHoveredRating(null);
+                      }}
+                      // The button never moves or shrinks, so a press near its edge
+                      // still lands on it; only the star inside reacts.
+                      className={`group relative flex aspect-square max-w-[60px] flex-1 items-center justify-center rounded-full transition-colors duration-150 cursor-pointer ${
+                        isActive
+                          ? "text-[var(--accent)]"
+                          : "text-[var(--star-empty)]"
+                      }`}
+                    >
+                      {/* Re-keyed on every pick so the selected stars pop in sequence */}
+                      <span className="pointer-events-none inline-flex transition-[scale,translate] duration-150 group-active:scale-[0.85] [@media(hover:hover)]:group-hover:-translate-y-1">
+                      <span
+                        key={isSelected ? `on-${rating}` : "off"}
+                        className={isSelected ? "star-pop" : "inline-flex"}
+                        style={{ "--i": value - 1 } as CSSProperties}
+                      >
+                        <StarIcon
+                          filled={isActive}
+                          className="h-10 w-10 sm:h-11 sm:w-11"
+                        />
+                      </span>
+                      </span>
+                      {rating === value && (
+                        <span aria-hidden="true" className="burst" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 min-h-[58px] space-y-1" aria-live="polite">
+                <p
+                  key={activeLabel ?? "empty"}
+                  className={`font-[family-name:var(--font-besley)] text-2xl font-medium tracking-[-0.01em] ${
+                    activeLabel
+                      ? "pop-in text-[var(--accent)]"
+                      : "text-[var(--foreground)]"
+                  }`}
+                  style={{ animationDuration: "240ms" }}
+                >
+                  {activeLabel ?? "Tap a star to rate"}
+                </p>
+                <p className="text-sm text-[var(--muted)]">
+                  {activeStars > 0
+                    ? RATING_HINTS[activeStars]
+                    : "From 1 for poor to 5 for excellent."}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* 2. Written review and submit */}
-          <div className="space-y-5 border-t border-[var(--border)] px-5 py-6 sm:px-7 sm:py-7">
+          <div className="space-y-5 px-5 pt-4 pb-6 sm:px-7 sm:pt-5 sm:pb-7">
             <div className="space-y-2.5">
               <label
                 htmlFor="comment"
@@ -351,7 +365,7 @@ export default function WriteReviewPage() {
                     ? COMMENT_PLACEHOLDERS[rating]
                     : "How was the food and service?"
                 }
-                className="block w-full min-h-[148px] resize-y rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3.5 text-base leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)] transition-[border-color,box-shadow] duration-150 focus:outline-none focus:border-[var(--accent)] focus:shadow-[0_0_0_4px_var(--accent-soft)]"
+                className="block w-full min-h-[148px] resize-y rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3.5 text-base leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)] transition-[border-color,box-shadow] duration-150 focus:border-[var(--accent)] focus:shadow-[0_0_0_4px_var(--accent-soft)]"
               />
             </div>
 
@@ -368,7 +382,7 @@ export default function WriteReviewPage() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="inline-flex items-center justify-center gap-2.5 min-h-[52px] w-full rounded-xl bg-[var(--accent)] px-6 py-3 text-base font-medium text-[var(--background)] transition-[scale,background-color,opacity] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                className="inline-flex items-center justify-center gap-2.5 min-h-[52px] w-full rounded-xl bg-[var(--accent)] px-6 py-3 text-base font-medium text-[var(--background)] transition-[scale,background-color,color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.97] disabled:bg-[var(--surface)] disabled:text-[var(--muted)] disabled:cursor-not-allowed cursor-pointer"
               >
                 {submitting && (
                   <svg
@@ -387,7 +401,7 @@ export default function WriteReviewPage() {
               </button>
               <p
                 aria-live="polite"
-                className="text-center text-sm text-[var(--muted)] empty:hidden"
+                className="text-sm text-[var(--muted)] empty:hidden"
               >
                 {submitHint}
               </p>
