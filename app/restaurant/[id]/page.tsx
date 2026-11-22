@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { StarIcon } from "@/components/StarIcon";
@@ -96,6 +97,7 @@ export default function RestaurantPage() {
           <div className="h-9 w-60 rounded bg-[var(--surface)] animate-pulse" />
           <div className="h-4 w-36 rounded bg-[var(--surface)] animate-pulse" />
         </div>
+        <div className="aspect-[3/2] w-full rounded-xl bg-[var(--surface)] animate-pulse" />
         <div className="h-20 w-44 rounded bg-[var(--surface)] animate-pulse" />
         <div className="h-32 w-full rounded-xl bg-[var(--surface)] animate-pulse" />
         <div className="space-y-4">
@@ -130,6 +132,18 @@ export default function RestaurantPage() {
           {data.cuisine}, {data.area}
         </p>
       </header>
+
+      {/* Static restaurant photograph */}
+      <div className="overflow-hidden rounded-xl bg-[var(--surface)] aspect-[3/2] relative">
+        <Image
+          src="/images/ludhiana-burrito.jpg"
+          alt={`Charred paneer burrito served with mint chutney at ${data.name}`}
+          fill
+          priority
+          sizes="(max-width: 600px) 100vw, 560px"
+          className="object-cover transition-transform duration-300 ease-out hover:scale-[1.02]"
+        />
+      </div>
 
       {/* 2. Average rating (largest element) + review count */}
       {data.averageRating !== null && (
