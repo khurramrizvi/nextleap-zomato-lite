@@ -14,6 +14,7 @@ export default function WriteReviewPage() {
   const [notFound, setNotFound] = useState(false);
 
   const [rating, setRating] = useState<number | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -48,6 +49,8 @@ export default function WriteReviewPage() {
 
   const canSubmit =
     rating !== null && comment.trim().length > 0 && !submitting;
+
+  const activeStars = hoveredRating ?? rating ?? 0;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -84,10 +87,13 @@ export default function WriteReviewPage() {
 
   if (loadingName) {
     return (
-      <main className="max-w-[560px] mx-auto px-5 py-14 space-y-8">
-        <div className="h-8 w-52 rounded bg-[var(--surface)] animate-pulse" />
-        <div className="h-10 w-44 rounded bg-[var(--surface)] animate-pulse" />
-        <div className="h-32 w-full rounded-md bg-[var(--surface)] animate-pulse" />
+      <main className="max-w-[560px] mx-auto px-5 py-16 space-y-8">
+        <div className="space-y-3">
+          <div className="h-4 w-32 rounded bg-[var(--surface)] animate-pulse" />
+          <div className="h-9 w-56 rounded bg-[var(--surface)] animate-pulse" />
+        </div>
+        <div className="h-12 w-56 rounded bg-[var(--surface)] animate-pulse" />
+        <div className="h-32 w-full rounded-lg bg-[var(--surface)] animate-pulse" />
       </main>
     );
   }
@@ -95,10 +101,10 @@ export default function WriteReviewPage() {
   if (notFound || !restaurantName) {
     return (
       <main className="max-w-[560px] mx-auto px-5 py-16 space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-[family-name:var(--font-besley)] text-3xl font-medium tracking-[-0.02em] text-[var(--foreground)]">
           Restaurant not found
         </h1>
-        <p className="text-sm text-[var(--muted)]">
+        <p className="text-base text-[var(--muted)]">
           We could not find the restaurant you want to review.
         </p>
       </main>
@@ -106,32 +112,55 @@ export default function WriteReviewPage() {
   }
 
   return (
-    <main className="max-w-[560px] mx-auto px-5 py-14 space-y-8">
-      <header className="space-y-2">
+    <main className="max-w-[560px] mx-auto px-5 py-14 sm:py-20 space-y-10 enter-quiet">
+      <header className="space-y-3">
         <Link
           href={`/restaurant/${restaurantId}`}
-          className="inline-block text-xs text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+          className="inline-flex items-center gap-1.5 min-h-[44px] -ml-1 px-1 text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
         >
-          Back to restaurant
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="w-4 h-4"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          Back to {restaurantName}
         </Link>
-        <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-          {restaurantName}
-        </h1>
-        <p className="text-sm text-[var(--muted)]">Write a review</p>
+        <div className="space-y-1.5">
+          <h1 className="font-[family-name:var(--font-besley)] text-3xl font-medium tracking-[-0.02em] leading-[1.2] text-[var(--foreground)]">
+            {restaurantName}
+          </h1>
+          <p className="text-[15px] text-[var(--muted)]">
+            Share your rating and review
+          </p>
+        </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-2">
-          <span className="block text-sm font-medium text-[var(--foreground)]">
-            Rating
-          </span>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="text-sm font-medium text-[var(--foreground)]">
+              Rating
+            </span>
+            <span className="text-sm text-[var(--muted)] tabular-nums">
+              {rating !== null ? `${rating} of 5` : "Pick 1 to 5 stars"}
+            </span>
+          </div>
           <div
-            className="flex items-center gap-2"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--surface)] p-1.5"
             role="radiogroup"
             aria-label="Star rating"
+            onMouseLeave={() => setHoveredRating(null)}
           >
             {[1, 2, 3, 4, 5].map((value) => {
-              const selected = rating !== null && value <= rating;
+              const isSelected = rating !== null && value <= rating;
+              const isActive = value <= activeStars;
               return (
                 <button
                   key={value}
@@ -139,26 +168,29 @@ export default function WriteReviewPage() {
                   role="radio"
                   aria-checked={rating === value}
                   aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
+                  onMouseEnter={() => setHoveredRating(value)}
                   onClick={() => setRating(value)}
-                  className={`p-1.5 rounded-md transition-transform active:scale-[0.95] cursor-pointer ${
-                    selected
-                      ? "text-[var(--accent)] bg-[var(--surface)]"
-                      : "text-[#c8c4bc] hover:text-[var(--muted)]"
+                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-[transform,background-color,color] duration-150 active:scale-[0.94] cursor-pointer ${
+                    isSelected
+                      ? "text-[var(--accent)] bg-[var(--surface-raised)]"
+                      : isActive
+                        ? "text-[var(--accent)]"
+                        : "text-[var(--star-empty)] hover:text-[var(--muted)]"
                   }`}
                 >
-                  <StarIcon filled={selected} className="w-7 h-7" />
+                  <StarIcon filled={isActive} className="w-6 h-6" />
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <label
             htmlFor="comment"
             className="block text-sm font-medium text-[var(--foreground)]"
           >
-            Comment
+            Your review
           </label>
           <textarea
             id="comment"
@@ -167,14 +199,14 @@ export default function WriteReviewPage() {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="How was the food and service?"
-            className="w-full rounded-md border border-[var(--border)] bg-white px-3.5 py-2.5 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--accent)]"
+            className="w-full min-h-[128px] rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-[15px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)] transition-colors focus:outline-none focus:border-[var(--accent)]"
           />
         </div>
 
         {error && (
           <p
             role="alert"
-            className="rounded-md bg-[#fef2f2] border border-[#fecaca] px-3.5 py-2.5 text-sm text-[#991b1b]"
+            className="rounded-lg bg-[var(--accent-soft)] border border-[var(--accent)]/30 px-4 py-3 text-sm text-[var(--accent-hover)]"
           >
             {error}
           </p>
@@ -183,9 +215,9 @@ export default function WriteReviewPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="rounded-md bg-[var(--accent)] px-5 py-2.5 text-sm font-medium text-[#faf9f6] transition-transform active:scale-[0.98] hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color,opacity] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
-          {submitting ? "Submitting..." : "Submit"}
+          {submitting ? "Submitting..." : "Submit review"}
         </button>
       </form>
     </main>

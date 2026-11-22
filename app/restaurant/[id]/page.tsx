@@ -32,13 +32,18 @@ function formatDate(isoString: string): string {
 
 function RatingStars({ rating }: { rating: number }) {
   return (
-    <div className="inline-flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+    <div
+      className="inline-flex items-center gap-1"
+      aria-label={`${rating} out of 5 stars`}
+    >
       {[1, 2, 3, 4, 5].map((value) => (
         <StarIcon
           key={value}
           filled={value <= rating}
           className={`w-4 h-4 ${
-            value <= rating ? "text-[var(--accent)]" : "text-[#d6d3cd]"
+            value <= rating
+              ? "text-[var(--accent)]"
+              : "text-[var(--star-empty)]"
           }`}
         />
       ))}
@@ -86,13 +91,17 @@ export default function RestaurantPage() {
 
   if (loading) {
     return (
-      <main className="max-w-[560px] mx-auto px-5 py-14 space-y-10">
-        <div className="space-y-2">
-          <div className="h-8 w-56 rounded bg-[var(--surface)] animate-pulse" />
+      <main className="max-w-[560px] mx-auto px-5 py-16 space-y-10">
+        <div className="space-y-2.5">
+          <div className="h-9 w-60 rounded bg-[var(--surface)] animate-pulse" />
           <div className="h-4 w-36 rounded bg-[var(--surface)] animate-pulse" />
         </div>
-        <div className="h-16 w-40 rounded bg-[var(--surface)] animate-pulse" />
-        <div className="h-28 w-full rounded-lg bg-[var(--surface)] animate-pulse" />
+        <div className="h-20 w-44 rounded bg-[var(--surface)] animate-pulse" />
+        <div className="h-32 w-full rounded-xl bg-[var(--surface)] animate-pulse" />
+        <div className="space-y-4">
+          <div className="h-16 w-full rounded bg-[var(--surface)] animate-pulse" />
+          <div className="h-16 w-full rounded bg-[var(--surface)] animate-pulse" />
+        </div>
       </main>
     );
   }
@@ -100,94 +109,109 @@ export default function RestaurantPage() {
   if (notFound || !data) {
     return (
       <main className="max-w-[560px] mx-auto px-5 py-16 space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="font-[family-name:var(--font-besley)] text-3xl font-medium tracking-[-0.02em] text-[var(--foreground)]">
           Restaurant not found
         </h1>
-        <p className="text-sm text-[var(--muted)]">
-          We could not find a restaurant at this address.
+        <p className="text-base text-[var(--muted)] leading-relaxed">
+          There is no restaurant listed at this address. Check the link and try again.
         </p>
       </main>
     );
   }
 
   return (
-    <main className="max-w-[560px] mx-auto px-5 py-14 space-y-10">
+    <main className="max-w-[560px] mx-auto px-5 py-14 sm:py-20 space-y-12 enter-quiet">
       {/* 1. Restaurant name, with cuisine and area underneath */}
-      <header className="space-y-1.5">
-        <h1 className="text-3xl font-semibold tracking-tight text-[var(--foreground)]">
+      <header className="space-y-2">
+        <h1 className="font-[family-name:var(--font-besley)] text-3xl sm:text-4xl font-medium tracking-[-0.02em] leading-[1.15] text-[var(--foreground)]">
           {data.name}
         </h1>
-        <p className="text-sm text-[var(--muted)]">
-          {data.cuisine} · {data.area}
+        <p className="text-[15px] text-[var(--muted)]">
+          {data.cuisine}, {data.area}
         </p>
       </header>
 
       {/* 2. Average rating (largest element) + review count */}
-      {data.averageRating !== null ? (
-        <section aria-label="Overall rating" className="flex items-baseline gap-3">
-          <span className="text-6xl font-semibold tracking-tight tabular-nums leading-none text-[var(--foreground)]">
+      {data.averageRating !== null && (
+        <section aria-label="Average rating" className="flex items-baseline gap-4">
+          <span className="font-[family-name:var(--font-besley)] text-[4.5rem] sm:text-[5rem] font-medium tracking-[-0.03em] tabular-nums leading-none text-[var(--foreground)]">
             {data.averageRating}
           </span>
-          <span className="text-sm text-[var(--muted)]">
-            out of 5 · {data.totalReviews}{" "}
-            {data.totalReviews === 1 ? "review" : "reviews"}
-          </span>
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-[var(--foreground)]">
+              out of 5
+            </p>
+            <p className="text-sm text-[var(--muted)]">
+              {data.totalReviews} {data.totalReviews === 1 ? "review" : "reviews"}
+            </p>
+          </div>
         </section>
-      ) : null}
+      )}
 
       {/* 3 & 4. Latest review highlighted, older reviews below, or empty state */}
       {data.latestReview === null ? (
-        <section className="rounded-lg bg-[var(--surface)] p-6 space-y-4">
-          <p className="text-base text-[var(--foreground)]">
-            No reviews yet for {data.name}.
-          </p>
-          <p className="text-sm text-[var(--muted)]">
-            Be the first to share what you ordered and how it was.
-          </p>
+        <section className="rounded-xl bg-[var(--surface)] p-7 space-y-5">
+          <div className="space-y-2">
+            <h2 className="font-[family-name:var(--font-besley)] text-xl font-medium text-[var(--foreground)]">
+              No reviews yet
+            </h2>
+            <p className="text-[15px] leading-relaxed text-[var(--muted)]">
+              Nobody has rated {data.name} yet. Leave the first review after your meal.
+            </p>
+          </div>
           <Link
             href={`/review/${id}`}
-            className="inline-block rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[#faf9f6] transition-transform active:scale-[0.98] hover:bg-[var(--accent-hover)]"
+            className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-5 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
           >
             Write the first review
           </Link>
         </section>
       ) : (
-        <div className="space-y-8">
-          {/* 3. Latest review, visually highlighted */}
+        <div className="space-y-10">
+          {/* 3. Latest review, visually highlighted by tonal shift and type scale */}
           <section
             aria-label="Latest review"
-            className="rounded-lg bg-[var(--surface)] border-l-2 border-[var(--accent)] p-5 space-y-3"
+            className="rounded-xl bg-[var(--surface)] p-6 sm:p-7 space-y-4"
           >
             <div className="flex items-center justify-between gap-4">
-              <span className="text-xs font-medium uppercase tracking-wider text-[var(--accent)]">
+              <span className="text-sm font-medium text-[var(--accent)]">
                 Latest review
               </span>
-              <span className="text-xs text-[var(--muted)]">
+              <time
+                dateTime={data.latestReview.createdAt}
+                className="text-xs text-[var(--muted)]"
+              >
                 {formatDate(data.latestReview.createdAt)}
-              </span>
+              </time>
             </div>
             <RatingStars rating={data.latestReview.rating} />
-            <p className="text-base leading-relaxed text-[var(--foreground)]">
+            <p className="text-lg leading-[1.6] text-[var(--foreground)]">
               {data.latestReview.comment}
             </p>
           </section>
 
           {/* 4. Older reviews below, in a plain list */}
           {data.reviews.length > 0 && (
-            <section aria-label="Earlier reviews" className="space-y-4">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-[var(--muted)]">
+            <section aria-label="Earlier reviews" className="space-y-5">
+              <h2 className="text-sm font-medium text-[var(--muted)]">
                 Earlier reviews
               </h2>
-              <ul className="divide-y divide-[var(--border)]">
+              <ul className="space-y-6">
                 {data.reviews.map((review) => (
-                  <li key={review.id} className="py-4 first:pt-0 space-y-2">
+                  <li
+                    key={review.id}
+                    className="pt-6 first:pt-0 border-t first:border-t-0 border-[var(--border)] space-y-2.5"
+                  >
                     <div className="flex items-center justify-between gap-4">
                       <RatingStars rating={review.rating} />
-                      <span className="text-xs text-[var(--muted)]">
+                      <time
+                        dateTime={review.createdAt}
+                        className="text-xs text-[var(--muted)]"
+                      >
                         {formatDate(review.createdAt)}
-                      </span>
+                      </time>
                     </div>
-                    <p className="text-sm leading-relaxed text-[var(--foreground)]">
+                    <p className="text-[15px] leading-relaxed text-[var(--foreground)]">
                       {review.comment}
                     </p>
                   </li>
@@ -197,10 +221,10 @@ export default function RestaurantPage() {
           )}
 
           {/* 5. Link to /review/[id] */}
-          <div>
+          <div className="pt-2">
             <Link
               href={`/review/${id}`}
-              className="inline-block rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[#faf9f6] transition-transform active:scale-[0.98] hover:bg-[var(--accent-hover)]"
+              className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
             >
               Write a review
             </Link>

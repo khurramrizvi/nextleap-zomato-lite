@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Besley, Albert_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const besley = Besley({
+  variable: "--font-besley",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const albertSans = Albert_Sans({
+  variable: "--font-albert-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
-  title: "Zomato Lite — Ludhiana Burrito",
-  description: "Restaurant reviews for Ludhiana Burrito, Sector 32.",
+  title: "Ludhiana Burrito — Zomato Lite",
+  description: "Reviews for Ludhiana Burrito, Indian, Sector 32.",
 };
 
 export default function RootLayout({
@@ -25,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)]`}
+        className={`${besley.variable} ${albertSans.variable} antialiased min-h-[100dvh] bg-[var(--background)] text-[var(--foreground)]`}
       >
         {children}
       </body>
