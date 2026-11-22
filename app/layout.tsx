@@ -5,13 +5,11 @@ import "./globals.css";
 const besley = Besley({
   variable: "--font-besley",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
 const albertSans = Albert_Sans({
   variable: "--font-albert-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
