@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
+import { getRatingLabel } from "@/lib/rating-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,7 @@ export async function GET(
     stats.average_rating !== null && stats.average_rating !== undefined
       ? Number(stats.average_rating)
       : null;
+  const ratingLabel = getRatingLabel(averageRating);
   const totalReviews = Number(stats.total_reviews ?? 0);
 
   const formattedReviews = reviewRows.map((row) => ({
@@ -70,6 +72,7 @@ export async function GET(
     cuisine: String(restaurant.cuisine),
     area: String(restaurant.area),
     averageRating,
+    ratingLabel,
     totalReviews,
     latestReview,
     reviews: olderReviews,

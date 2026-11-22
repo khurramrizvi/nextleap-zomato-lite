@@ -18,6 +18,7 @@ interface RestaurantData {
   cuisine: string;
   area: string;
   averageRating: number | null;
+  ratingLabel: string | null;
   totalReviews: number;
   latestReview: Review | null;
   reviews: Review[];
@@ -145,18 +146,24 @@ export default function RestaurantPage() {
         />
       </div>
 
-      {/* 2. Average rating (largest element) + review count */}
+      {/* 2. Average rating (largest element) + category + review count */}
       {data.averageRating !== null && (
-        <section aria-label="Average rating" className="flex items-baseline gap-4">
-          <span className="font-[family-name:var(--font-besley)] text-[4.5rem] sm:text-[5rem] font-medium tracking-[-0.03em] tabular-nums leading-none text-[var(--foreground)]">
+        <section
+          aria-label="Average rating"
+          className="flex items-center gap-5 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 sm:p-6"
+        >
+          <span className="font-[family-name:var(--font-besley)] text-[4.25rem] sm:text-[4.75rem] font-medium tracking-[-0.03em] tabular-nums leading-none text-[var(--foreground)]">
             {data.averageRating}
           </span>
-          <div className="space-y-0.5">
-            <p className="text-sm font-medium text-[var(--foreground)]">
-              out of 5
-            </p>
+          <div className="space-y-1">
+            {data.ratingLabel && (
+              <span className="inline-block rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent)]">
+                {data.ratingLabel}
+              </span>
+            )}
             <p className="text-sm text-[var(--muted)]">
-              {data.totalReviews} {data.totalReviews === 1 ? "review" : "reviews"}
+              out of 5, based on {data.totalReviews}{" "}
+              {data.totalReviews === 1 ? "review" : "reviews"}
             </p>
           </div>
         </section>

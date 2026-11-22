@@ -4,12 +4,14 @@ import { useEffect, useState, FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { StarIcon } from "@/components/StarIcon";
+import { RATING_LABELS } from "@/lib/rating-labels";
 
 export default function WriteReviewPage() {
   const { restaurantId } = useParams<{ restaurantId: string }>();
   const router = useRouter();
 
   const [restaurantName, setRestaurantName] = useState<string | null>(null);
+  const [restaurantMeta, setRestaurantMeta] = useState<string | null>(null);
   const [loadingName, setLoadingName] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -34,7 +36,10 @@ export default function WriteReviewPage() {
         }
         if (res.ok) {
           const json = await res.json();
-          if (active) setRestaurantName(json.name);
+          if (active) {
+            setRestaurantName(json.name);
+            setRestaurantMeta(`${json.cuisine}, ${json.area}`);
+          }
         }
       } finally {
         if (active) setLoadingName(false);
@@ -51,6 +56,7 @@ export default function WriteReviewPage() {
     rating !== null && comment.trim().length > 0 && !submitting;
 
   const activeStars = hoveredRating ?? rating ?? 0;
+  const activeLabel = activeStars > 0 ? RATING_LABELS[activeStars] : null;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -92,8 +98,8 @@ export default function WriteReviewPage() {
           <div className="h-4 w-32 rounded bg-[var(--surface)] animate-pulse" />
           <div className="h-9 w-56 rounded bg-[var(--surface)] animate-pulse" />
         </div>
-        <div className="h-12 w-56 rounded bg-[var(--surface)] animate-pulse" />
-        <div className="h-32 w-full rounded-lg bg-[var(--surface)] animate-pulse" />
+        <div className="h-24 w-full rounded-2xl bg-[var(--surface)] animate-pulse" />
+        <div className="h-36 w-full rounded-xl bg-[var(--surface)] animate-pulse" />
       </main>
     );
   }
@@ -136,24 +142,39 @@ export default function WriteReviewPage() {
           <h1 className="font-[family-name:var(--font-besley)] text-3xl font-medium tracking-[-0.02em] leading-[1.2] text-[var(--foreground)]">
             {restaurantName}
           </h1>
-          <p className="text-[15px] text-[var(--muted)]">
-            Share your rating and review
-          </p>
+          {restaurantMeta && (
+            <p className="text-[15px] text-[var(--muted)]">{restaurantMeta}</p>
+          )}
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="space-y-3">
-          <div className="flex items-baseline justify-between gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-6 sm:p-7 space-y-8"
+      >
+        <div className="space-y-3.5">
+          <div className="flex items-center justify-between gap-4 min-h-[28px]">
             <span className="text-sm font-medium text-[var(--foreground)]">
-              Rating
+              Your rating
             </span>
-            <span className="text-sm text-[var(--muted)] tabular-nums">
-              {rating !== null ? `${rating} of 5` : "Pick 1 to 5 stars"}
-            </span>
+            {activeLabel ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent)]">
+                  {activeLabel}
+                </span>
+                <span className="text-xs text-[var(--muted)] tabular-nums">
+                  {activeStars} of 5
+                </span>
+              </span>
+            ) : (
+              <span className="text-sm text-[var(--muted)]">
+                Select 1 to 5 stars
+              </span>
+            )}
           </div>
+
           <div
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--surface)] p-1.5"
+            className="grid grid-cols-5 gap-2 rounded-xl bg-[var(--surface)] p-2"
             role="radiogroup"
             aria-label="Star rating"
             onMouseLeave={() => setHoveredRating(null)}
@@ -167,10 +188,10 @@ export default function WriteReviewPage() {
                   type="button"
                   role="radio"
                   aria-checked={rating === value}
-                  aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
+                  aria-label={`${value} ${value === 1 ? "star" : "stars"} — ${RATING_LABELS[value]}`}
                   onMouseEnter={() => setHoveredRating(value)}
                   onClick={() => setRating(value)}
-                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-[transform,background-color,color] duration-150 active:scale-[0.94] cursor-pointer ${
+                  className={`min-h-[52px] flex flex-col items-center justify-center gap-1 rounded-lg transition-[transform,background-color,color] duration-150 active:scale-[0.94] cursor-pointer ${
                     isSelected
                       ? "text-[var(--accent)] bg-[var(--surface-raised)]"
                       : isActive
@@ -199,7 +220,7 @@ export default function WriteReviewPage() {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="How was the food and service?"
-            className="w-full min-h-[128px] rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-4 py-3 text-[15px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)] transition-colors focus:outline-none focus:border-[var(--accent)]"
+            className="w-full min-h-[132px] rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-3 text-[15px] leading-relaxed text-[var(--foreground)] placeholder:text-[var(--muted)] transition-colors focus:outline-none focus:border-[var(--accent)]"
           />
         </div>
 
@@ -215,7 +236,7 @@ export default function WriteReviewPage() {
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color,opacity] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          className="inline-flex items-center justify-center min-h-[44px] w-full rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color,opacity] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           {submitting ? "Submitting..." : "Submit review"}
         </button>
