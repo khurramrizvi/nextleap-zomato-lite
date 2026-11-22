@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { StarIcon } from "@/components/StarIcon";
-import { CountUp } from "@/components/CountUp";
+import { RollingNumber } from "@/components/RollingNumber";
 
 interface Review {
   id: number;
@@ -74,6 +74,8 @@ function RatingStars({
 }
 
 const JUST_POSTED_KEY = "zomato-lite:just-posted";
+const PHOTO_SRC = "/images/ludhiana-burrito.jpg";
+const PHOTO_SIZES = "(max-width: 600px) 100vw, 560px";
 
 export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +83,7 @@ export default function RestaurantPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [justPosted, setJustPosted] = useState(false);
+  const [photoLoaded, setPhotoLoaded] = useState(false);
   const earlierListRef = useRef<HTMLUListElement>(null);
 
   // Arriving straight from a submitted review: let the new review announce itself.
@@ -100,7 +103,7 @@ export default function RestaurantPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         // Rows visible on first paint wait for the sections above them.
-        const base = performance.now() - mountedAt < 400 ? 520 : 0;
+        const base = performance.now() - mountedAt < 400 ? 380 : 0;
         let n = 0;
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
@@ -151,13 +154,27 @@ export default function RestaurantPage() {
 
   if (loading) {
     return (
-      <main className="max-w-[560px] mx-auto px-5 py-16 space-y-10">
-        <div className="space-y-2.5">
-          <div className="h-9 w-60 rounded bg-[var(--surface)] animate-pulse" />
-          <div className="h-4 w-36 rounded bg-[var(--surface)] animate-pulse" />
+      // Same spacing and block sizes as the loaded page, so nothing jumps on swap.
+      <main className="max-w-[560px] mx-auto px-5 py-14 sm:py-20 space-y-12">
+        <div className="space-y-2">
+          <div className="h-[35px] sm:h-[41px] w-60 rounded bg-[var(--surface)] animate-pulse" />
+          <div className="h-[22px] w-36 rounded bg-[var(--surface)] animate-pulse" />
         </div>
-        <div className="aspect-[3/2] w-full rounded-xl bg-[var(--surface)] animate-pulse" />
-        <div className="h-20 w-44 rounded bg-[var(--surface)] animate-pulse" />
+        <div className="relative aspect-[3/2] w-full overflow-hidden rounded-xl bg-[var(--surface)] animate-pulse">
+          {/* Starts the photo download during the data fetch. React keeps this
+              same <img> when the loaded page swaps in, so it never reloads. */}
+          <Image
+            src={PHOTO_SRC}
+            alt=""
+            aria-hidden="true"
+            fill
+            priority
+            sizes={PHOTO_SIZES}
+            onLoad={() => setPhotoLoaded(true)}
+            className="object-cover opacity-0"
+          />
+        </div>
+        <div className="h-[110px] sm:h-[126px] w-full rounded-xl bg-[var(--surface)] animate-pulse" />
         <div className="h-32 w-full rounded-xl bg-[var(--surface)] animate-pulse" />
         <div className="space-y-4">
           <div className="h-16 w-full rounded bg-[var(--surface)] animate-pulse" />
@@ -198,7 +215,7 @@ export default function RestaurantPage() {
             </span>
           ))}
         </h1>
-        <p className="rise text-[15px] text-[var(--muted)]" style={stagger(2)}>
+        <p className="rise text-[15px] text-[var(--muted)]" style={stagger(1)}>
           {data.cuisine}, {data.area}
         </p>
       </header>
@@ -206,12 +223,15 @@ export default function RestaurantPage() {
       {/* Static restaurant photograph */}
       <div className="photo-reveal overflow-hidden rounded-xl bg-[var(--surface)] aspect-[3/2] relative">
         <Image
-          src="/images/ludhiana-burrito.jpg"
+          src={PHOTO_SRC}
           alt={`Charred paneer burrito served with mint chutney at ${data.name}`}
           fill
           priority
-          sizes="(max-width: 600px) 100vw, 560px"
-          className="photo-settle object-cover transition-transform duration-300 ease-out hover:scale-[1.02]"
+          sizes={PHOTO_SIZES}
+          onLoad={() => setPhotoLoaded(true)}
+          className={`photo-settle object-cover transition-[opacity,scale] duration-500 ease-out hover:scale-[1.02] ${
+            photoLoaded ? "opacity-100" : "opacity-0"
+          }`}
         />
       </div>
 
@@ -223,13 +243,13 @@ export default function RestaurantPage() {
           style={stagger(4)}
         >
           <span className="font-[family-name:var(--font-besley)] text-[4.25rem] sm:text-[4.75rem] font-medium tracking-[-0.03em] tabular-nums leading-none text-[var(--foreground)]">
-            <CountUp value={data.averageRating} delayMs={450} />
+            <RollingNumber value={data.averageRating} />
           </span>
           <div className="space-y-1">
             {data.ratingLabel && (
               <span
                 className="pop-in inline-block rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent)]"
-                style={{ "--delay": "1250ms" } as CSSProperties}
+                style={{ "--delay": "950ms" } as CSSProperties}
               >
                 {data.ratingLabel}
               </span>
@@ -281,7 +301,7 @@ export default function RestaurantPage() {
             </div>
             <RatingStars
               rating={data.latestReview.rating}
-              baseDelayMs={justPosted ? 900 : 750}
+              baseDelayMs={justPosted ? 900 : 520}
             />
             <p className="text-lg leading-[1.6] text-[var(--foreground)]">
               {data.latestReview.comment}

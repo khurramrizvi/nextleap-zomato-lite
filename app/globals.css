@@ -37,6 +37,11 @@ body {
   outline-offset: 2px;
 }
 
+/* The review textarea shows focus with its own border and glow */
+textarea:focus-visible {
+  outline: none;
+}
+
 @keyframes enter-up {
   from {
     opacity: 0;
@@ -79,19 +84,19 @@ body {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(22px) scale(0.985);
-    filter: blur(6px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
+    transform: translateY(0);
   }
 }
 
+/* Opacity + transform only: both run on the compositor, so the entrance
+   stays smooth on phones even while the main thread is busy. */
 .rise {
-  animation: rise 700ms var(--ease-out) backwards;
-  animation-delay: calc(var(--i, 0) * 80ms + var(--base-delay, 0ms));
+  animation: rise 600ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms + var(--base-delay, 0ms));
 }
 
 /* Headline words slide up out of a mask */
@@ -105,35 +110,24 @@ body {
 
 @keyframes word-up {
   from {
-    transform: translateY(110%) rotate(5deg);
+    transform: translateY(110%);
   }
   to {
-    transform: translateY(0) rotate(0);
+    transform: translateY(0);
   }
 }
 
 .word-up {
   display: inline-block;
   transform-origin: left bottom;
-  animation: word-up 800ms var(--ease-out) backwards;
-  animation-delay: calc(var(--i, 0) * 70ms + 60ms);
+  animation: word-up 650ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 60ms);
 }
 
-/* Photograph: curtain lifts while the image settles from a slight zoom */
-@keyframes photo-curtain {
-  from {
-    clip-path: inset(0 0 100% 0 round 0.75rem);
-    transform: translateY(24px);
-  }
-  to {
-    clip-path: inset(0 0 0 0 round 0.75rem);
-    transform: translateY(0);
-  }
-}
-
+/* Photograph: the frame rises in while the image settles from a slight zoom */
 @keyframes photo-settle {
   from {
-    transform: scale(1.18);
+    transform: scale(1.08);
   }
   to {
     transform: scale(1);
@@ -141,11 +135,47 @@ body {
 }
 
 .photo-reveal {
-  animation: photo-curtain 1000ms var(--ease-out) 180ms backwards;
+  animation: rise 700ms var(--ease-out) 120ms backwards;
 }
 
 .photo-settle {
-  animation: photo-settle 1500ms var(--ease-out) 180ms backwards;
+  animation: photo-settle 1100ms var(--ease-out) 120ms backwards;
+}
+
+/* Odometer digits for the average rating */
+.roll-digit {
+  position: relative;
+  display: inline-block;
+  height: 1em;
+  line-height: 1;
+  overflow: hidden;
+  /* Soft top and bottom edges so passing digits fade instead of being cut */
+  mask-image: linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+}
+
+.roll-strip {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  translate: -50% 0;
+  transform: translateY(calc(var(--steps) * -1em));
+  animation: roll 1000ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 110ms + 380ms);
+}
+
+.roll-strip > span {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+
+@keyframes roll {
+  from {
+    transform: translateY(0);
+  }
 }
 
 /* Spring pop for badges and pills */
@@ -398,6 +428,7 @@ body {
   .photo-settle,
   .pop-in,
   .star-pop,
+  .roll-strip,
   .reveal[data-shown="true"],
   .just-posted,
   .shake,
