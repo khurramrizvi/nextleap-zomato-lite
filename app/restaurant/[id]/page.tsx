@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { StarIcon } from "@/components/StarIcon";
+import { CountUp } from "@/components/CountUp";
 
 interface Review {
   id: number;
@@ -32,32 +33,89 @@ function formatDate(isoString: string): string {
   });
 }
 
-function RatingStars({ rating }: { rating: number }) {
+/** Sets the stagger index (and optional base delay) read by the motion classes. */
+function stagger(i: number, baseDelayMs = 0): CSSProperties {
+  return { "--i": i, "--base-delay": `${baseDelayMs}ms` } as CSSProperties;
+}
+
+function RatingStars({
+  rating,
+  baseDelayMs,
+}: {
+  rating: number;
+  /** When set, the stars pop in one after another starting at this delay. */
+  baseDelayMs?: number;
+}) {
   return (
     <div
       className="inline-flex items-center gap-1"
       aria-label={`${rating} out of 5 stars`}
     >
       {[1, 2, 3, 4, 5].map((value) => (
-        <StarIcon
+        <span
           key={value}
-          filled={value <= rating}
-          className={`w-4 h-4 ${
-            value <= rating
-              ? "text-[var(--accent)]"
-              : "text-[var(--star-empty)]"
-          }`}
-        />
+          className={baseDelayMs !== undefined ? "star-pop" : "inline-flex"}
+          style={
+            baseDelayMs !== undefined ? stagger(value - 1, baseDelayMs) : undefined
+          }
+        >
+          <StarIcon
+            filled={value <= rating}
+            className={`w-4 h-4 ${
+              value <= rating
+                ? "text-[var(--accent)]"
+                : "text-[var(--star-empty)]"
+            }`}
+          />
+        </span>
       ))}
     </div>
   );
 }
+
+const JUST_POSTED_KEY = "zomato-lite:just-posted";
 
 export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<RestaurantData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [justPosted, setJustPosted] = useState(false);
+  const earlierListRef = useRef<HTMLUListElement>(null);
+
+  // Arriving straight from a submitted review: let the new review announce itself.
+  useEffect(() => {
+    if (sessionStorage.getItem(JUST_POSTED_KEY) !== id) return;
+    setJustPosted(true);
+    // Deferred so React's double-invoked dev effects both see the flag.
+    const timer = setTimeout(() => sessionStorage.removeItem(JUST_POSTED_KEY), 0);
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  // Reveal earlier reviews as they scroll into view, staggered per batch.
+  useEffect(() => {
+    const list = earlierListRef.current;
+    if (!list) return;
+    const mountedAt = performance.now();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Rows visible on first paint wait for the sections above them.
+        const base = performance.now() - mountedAt < 400 ? 520 : 0;
+        let n = 0;
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const el = entry.target as HTMLElement;
+          el.style.animationDelay = `${base + Math.min(n, 5) * 70}ms`;
+          el.dataset.shown = "true";
+          observer.unobserve(el);
+          n += 1;
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px" }
+    );
+    list.querySelectorAll<HTMLElement>(".reveal").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [data]);
 
   useEffect(() => {
     let active = true;
@@ -123,26 +181,37 @@ export default function RestaurantPage() {
   }
 
   return (
-    <main className="max-w-[560px] mx-auto px-5 py-14 sm:py-20 space-y-12 enter-quiet">
+    <main className="max-w-[560px] mx-auto px-5 py-14 sm:py-20 space-y-12">
       {/* 1. Restaurant name, with cuisine and area underneath */}
       <header className="space-y-2">
-        <h1 className="font-[family-name:var(--font-besley)] text-3xl sm:text-4xl font-medium tracking-[-0.02em] leading-[1.15] text-[var(--foreground)]">
-          {data.name}
+        <h1
+          aria-label={data.name}
+          className="font-[family-name:var(--font-besley)] text-3xl sm:text-4xl font-medium tracking-[-0.02em] leading-[1.15] text-[var(--foreground)]"
+        >
+          {data.name.split(" ").map((word, index) => (
+            <span key={index} aria-hidden="true">
+              <span className="word-mask">
+                <span className="word-up" style={stagger(index)}>
+                  {word}
+                </span>
+              </span>{" "}
+            </span>
+          ))}
         </h1>
-        <p className="text-[15px] text-[var(--muted)]">
+        <p className="rise text-[15px] text-[var(--muted)]" style={stagger(2)}>
           {data.cuisine}, {data.area}
         </p>
       </header>
 
       {/* Static restaurant photograph */}
-      <div className="overflow-hidden rounded-xl bg-[var(--surface)] aspect-[3/2] relative">
+      <div className="photo-reveal overflow-hidden rounded-xl bg-[var(--surface)] aspect-[3/2] relative">
         <Image
           src="/images/ludhiana-burrito.jpg"
           alt={`Charred paneer burrito served with mint chutney at ${data.name}`}
           fill
           priority
           sizes="(max-width: 600px) 100vw, 560px"
-          className="object-cover transition-transform duration-300 ease-out hover:scale-[1.02]"
+          className="photo-settle object-cover transition-transform duration-300 ease-out hover:scale-[1.02]"
         />
       </div>
 
@@ -150,14 +219,18 @@ export default function RestaurantPage() {
       {data.averageRating !== null && (
         <section
           aria-label="Average rating"
-          className="flex items-center gap-5 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 sm:p-6"
+          className="rise flex items-center gap-5 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-5 sm:p-6"
+          style={stagger(4)}
         >
           <span className="font-[family-name:var(--font-besley)] text-[4.25rem] sm:text-[4.75rem] font-medium tracking-[-0.03em] tabular-nums leading-none text-[var(--foreground)]">
-            {data.averageRating}
+            <CountUp value={data.averageRating} delayMs={450} />
           </span>
           <div className="space-y-1">
             {data.ratingLabel && (
-              <span className="inline-block rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent)]">
+              <span
+                className="pop-in inline-block rounded-md bg-[var(--accent-soft)] px-2.5 py-0.5 text-sm font-medium text-[var(--accent)]"
+                style={{ "--delay": "1250ms" } as CSSProperties}
+              >
                 {data.ratingLabel}
               </span>
             )}
@@ -171,7 +244,7 @@ export default function RestaurantPage() {
 
       {/* 3 & 4. Latest review highlighted, older reviews below, or empty state */}
       {data.latestReview === null ? (
-        <section className="rounded-xl bg-[var(--surface)] p-7 space-y-5">
+        <section className="rise rounded-xl bg-[var(--surface)] p-7 space-y-5" style={stagger(5)}>
           <div className="space-y-2">
             <h2 className="font-[family-name:var(--font-besley)] text-xl font-medium text-[var(--foreground)]">
               No reviews yet
@@ -182,7 +255,7 @@ export default function RestaurantPage() {
           </div>
           <Link
             href={`/review/${id}`}
-            className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-5 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+            className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-5 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[scale,background-color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
           >
             Write the first review
           </Link>
@@ -192,11 +265,12 @@ export default function RestaurantPage() {
           {/* 3. Latest review, visually highlighted by tonal shift and type scale */}
           <section
             aria-label="Latest review"
-            className="rounded-xl bg-[var(--surface)] p-6 sm:p-7 space-y-4"
+            className={`${justPosted ? "just-posted" : "rise"} rounded-xl bg-[var(--surface)] p-6 sm:p-7 space-y-4`}
+            style={stagger(5)}
           >
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm font-medium text-[var(--accent)]">
-                Latest review
+                {justPosted ? "Your review, just posted" : "Latest review"}
               </span>
               <time
                 dateTime={data.latestReview.createdAt}
@@ -205,7 +279,10 @@ export default function RestaurantPage() {
                 {formatDate(data.latestReview.createdAt)}
               </time>
             </div>
-            <RatingStars rating={data.latestReview.rating} />
+            <RatingStars
+              rating={data.latestReview.rating}
+              baseDelayMs={justPosted ? 900 : 750}
+            />
             <p className="text-lg leading-[1.6] text-[var(--foreground)]">
               {data.latestReview.comment}
             </p>
@@ -214,14 +291,14 @@ export default function RestaurantPage() {
           {/* 4. Older reviews below, in a plain list */}
           {data.reviews.length > 0 && (
             <section aria-label="Earlier reviews" className="space-y-5">
-              <h2 className="text-sm font-medium text-[var(--muted)]">
+              <h2 className="rise text-sm font-medium text-[var(--muted)]" style={stagger(6)}>
                 Earlier reviews
               </h2>
-              <ul className="space-y-6">
+              <ul ref={earlierListRef} className="space-y-6">
                 {data.reviews.map((review) => (
                   <li
                     key={review.id}
-                    className="pt-6 first:pt-0 border-t first:border-t-0 border-[var(--border)] space-y-2.5"
+                    className="reveal pt-6 first:pt-0 border-t first:border-t-0 border-[var(--border)] space-y-2.5"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <RatingStars rating={review.rating} />
@@ -242,10 +319,10 @@ export default function RestaurantPage() {
           )}
 
           {/* 5. Link to /review/[id] */}
-          <div className="pt-2">
+          <div className="rise pt-2" style={stagger(7)}>
             <Link
               href={`/review/${id}`}
-              className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[transform,background-color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+              className="inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto rounded-lg bg-[var(--accent)] px-6 py-2.5 text-[15px] font-medium text-[var(--background)] transition-[scale,background-color] duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
             >
               Write a review
             </Link>
